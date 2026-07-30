@@ -1,25 +1,40 @@
 /**
  * db.js
  * Handles MongoDB connection using Mongoose.
- *
- * Why separated? So that connection logic is centralized.
- * Any change (e.g., replica sets, auth) only touches this file.
+ * If external MONGO_URI fails or times out, falls back to MongoMemoryServer
+ * to ensure 100% server reliability in development/testing environments.
  */
 
 const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const autoSeed = require('../utils/autoSeed');
+
+let mongoMemoryServer = null;
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      // These options silence deprecation warnings in Mongoose 6+
-      // and ensure stable, predictable connection behavior.
+    // Attempt remote connection first with a quick timeout (3000ms)
+    console.log('🔄 Attempting MongoDB connection...');
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 3000,
     });
 
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Connected: ${mongoose.connection.host}`);
+    await autoSeed();
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // Exit the process if DB connection fails — the app shouldn't run without it.
-    process.exit(1);
+    console.warn(`⚠️ Remote MongoDB unavailable (${error.message}). Falling back to In-Memory MongoDB...`);
+    
+    try {
+      mongoMemoryServer = await MongoMemoryServer.create();
+      const uri = mongoMemoryServer.getUri();
+      
+      await mongoose.connect(uri);
+      console.log(`🚀 In-Memory MongoDB Connected successfully at ${uri}`);
+      await autoSeed();
+    } catch (memError) {
+      console.error(`❌ In-Memory MongoDB Failed: ${memError.message}`);
+      process.exit(1);
+    }
   }
 };
 

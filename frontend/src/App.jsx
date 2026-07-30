@@ -7,10 +7,12 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import BuyerDashboard from './pages/BuyerDashboard';
+import BuyerOnboarding from './pages/BuyerOnboarding';
 import PropertyListing from './pages/PropertyListing';
 import ComparisonDashboard from './pages/ComparisonDashboard';
 import SellerDashboard from './pages/SellerDashboard';
 import CreateProperty from './pages/CreateProperty';
+import PropertyDetails from './pages/PropertyDetails';
 import NotFound from './pages/NotFound';
 
 // Protected Route wrapper
@@ -19,10 +21,10 @@ function ProtectedRoute({ children, requiredRole }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-3 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-          <span className="text-sm text-on-surface-variant">Loading...</span>
+          <span className="text-sm text-slate-400 font-medium">Loading SmartSite...</span>
         </div>
       </div>
     );
@@ -50,6 +52,15 @@ function GuestRoute({ children }) {
   return children;
 }
 
+// Dashboard router based on role
+function RoleBasedDashboard() {
+  const { user } = useAuth();
+  if (user?.role === 'seller') {
+    return <Navigate to="/seller/dashboard" replace />;
+  }
+  return <Navigate to="/buyer/dashboard" replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -64,7 +75,13 @@ export default function App() {
             <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
 
+            {/* Property Details */}
+            <Route path="/property/:id" element={<PropertyDetails />} />
+
             {/* Buyer Routes */}
+            <Route path="/buyer/onboarding" element={
+              <ProtectedRoute requiredRole="buyer"><BuyerOnboarding /></ProtectedRoute>
+            } />
             <Route path="/buyer/dashboard" element={
               <ProtectedRoute requiredRole="buyer"><BuyerDashboard /></ProtectedRoute>
             } />
@@ -82,6 +99,12 @@ export default function App() {
             <Route path="/seller/properties/create" element={
               <ProtectedRoute requiredRole="seller"><CreateProperty /></ProtectedRoute>
             } />
+
+            {/* Aliases for quick navigation */}
+            <Route path="/dashboard" element={<ProtectedRoute><RoleBasedDashboard /></ProtectedRoute>} />
+            <Route path="/properties" element={<PropertyListing />} />
+            <Route path="/seller/properties" element={<ProtectedRoute requiredRole="seller"><SellerDashboard /></ProtectedRoute>} />
+            <Route path="/compare" element={<ProtectedRoute requiredRole="buyer"><ComparisonDashboard /></ProtectedRoute>} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
-import { UserPlus, Mail, Lock, User, Phone, Building2, Sparkles, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Phone, Building2, Sparkles, AlertTriangle, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'buyer' });
@@ -36,135 +36,178 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left - Decorative */}
-      <div className="hidden lg:flex lg:w-5/12 relative bg-gradient-to-br from-surface to-surface-container items-center justify-center overflow-hidden border-r border-white/5">
-        <div className="absolute top-20 right-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-20 left-10 w-56 h-56 bg-indigo-500/10 rounded-full blur-[80px]" />
-        <div className="relative z-10 text-center px-16 max-w-lg mx-auto">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-400 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/20">
-            <ShieldCheck size={40} className="text-white" />
-          </div>
-          <h2 className="text-4xl font-extrabold mb-4 tracking-tight">Join SmartSite</h2>
-          <p className="text-on-surface-variant text-lg mb-10">Start making AI-powered property decisions today.</p>
+    <div className="min-h-[85vh] flex items-center justify-center py-6 px-4">
+      <div className="w-full max-w-5xl bg-white rounded-3xl border border-slate-200/80 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+        {/* Left Section - Hero Brand Feature */}
+        <div className="lg:col-span-5 bg-slate-900 text-white p-8 lg:p-12 relative flex flex-col justify-between overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[90px] pointer-events-none" />
 
-          <div className="space-y-5 text-left bg-surface-container-low/50 backdrop-blur-md p-8 rounded-2xl border border-white/5">
+          <div className="relative z-10">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-500 flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
+              <ShieldCheck size={28} className="text-white" />
+            </div>
+            <span className="badge-ai !text-emerald-300 !bg-emerald-500/20 border-emerald-400/30 mb-3">
+              Join SmartSite Platform
+            </span>
+            <h2 className="text-3xl font-extrabold text-white tracking-tight mb-3">
+              Create Your Intelligence Account
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-8">
+              Unlock multi-agent property insights, tailored lifestyle weighting, and explainable ROI scoring.
+            </p>
+          </div>
+
+          <div className="relative z-10 space-y-3 pt-6 border-t border-slate-800">
             {[
-              'AI-powered property matching',
-              'Personalized recommendations',
-              'Real-time market insights',
-              'Explainable AI reasoning',
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-4 text-base text-on-surface font-medium">
-                <div className="w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                  <span className="text-emerald-400 text-sm font-bold">✓</span>
-                </div>
-                {item}
+              'Personalized AI property match score',
+              'Environment AQI & noise metrics',
+              'Real-time valuation & ROI engine',
+              'Seller inventory analytics dashboard'
+            ].map((feat, idx) => (
+              <div key={idx} className="flex items-center gap-2.5 text-xs text-slate-300 font-medium">
+                <CheckCircle2 size={15} className="text-emerald-400 flex-shrink-0" />
+                <span>{feat}</span>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Right - Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-surface">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-full max-w-[420px]"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={20} className="text-emerald-400" />
-            <h1 className="text-3xl font-bold tracking-tight">Create Account</h1>
-          </div>
-          <p className="text-base text-on-surface-variant mb-8">Join as a buyer or seller and get started</p>
+        {/* Right Section - Registration Form */}
+        <div className="lg:col-span-7 p-8 lg:p-12 flex flex-col justify-center bg-white">
+          <div className="max-w-md mx-auto w-full">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={20} className="text-emerald-600" />
+              <h1 className="text-2xl font-bold text-slate-900">Get Started Free</h1>
+            </div>
+            <p className="text-xs text-slate-500 mb-6">Select account role and enter details to get started</p>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 p-3 rounded-xl bg-error-container/20 border border-error/20 text-error text-sm mb-4"
-            >
-              <AlertTriangle size={16} />
-              {error}
-            </motion.div>
-          )}
-
-          {/* Role Toggle */}
-          <div className="flex gap-2 mb-6">
-            {['buyer', 'seller'].map(role => (
-              <button
-                key={role}
-                type="button"
-                onClick={() => setForm(prev => ({ ...prev, role }))}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium capitalize transition-all ${form.role === role
-                    ? 'bg-gradient-to-r from-indigo-500/20 to-indigo-500/10 text-primary border border-indigo-500/30'
-                    : 'bg-surface-container-highest text-on-surface-variant border border-transparent'
-                  }`}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium mb-5"
               >
-                {role === 'buyer' ? '🏠' : '📊'} {role}
+                <AlertTriangle size={18} className="flex-shrink-0 text-rose-600" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+
+            {/* Role Toggle Selector */}
+            <div className="grid grid-cols-2 gap-3 mb-6 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, role: 'buyer' }))}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  form.role === 'buyer'
+                    ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>🏠 Buyer Account</span>
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, role: 'seller' }))}
+                className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                  form.role === 'seller'
+                    ? 'bg-white text-emerald-600 shadow-sm border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>📊 Seller / Developer</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              <div>
+                <label className="label-sm block mb-1 text-slate-700 font-bold">Full Name</label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    name="name"
+                    type="text"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="input-field !pl-10"
+                    placeholder="Rahul Sharma"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-sm block mb-1 text-slate-700 font-bold">Email Address</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="input-field !pl-10"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-sm block mb-1 text-slate-700 font-bold">Phone Number (Optional)</label>
+                <div className="relative">
+                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    name="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={handleChange}
+                    className="input-field !pl-10"
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-sm block mb-1 text-slate-700 font-bold">Password</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="input-field !pl-10"
+                    placeholder="Min 6 characters"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full !py-3 flex items-center justify-center gap-2 text-sm mt-2"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <UserPlus size={16} />
+                    <span>Create Free Account</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="text-center text-xs text-slate-500 mt-6">
+              Already registered?{' '}
+              <Link to="/login" className="text-indigo-600 font-bold hover:underline inline-flex items-center gap-1">
+                Sign in to your account <ArrowRight size={12} />
+              </Link>
+            </p>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label-sm block mb-1.5">Full Name</label>
-              <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
-                <input name="name" type="text" value={form.name} onChange={handleChange}
-                  className="input-field !pl-10" placeholder="Rahul Sharma" required />
-              </div>
-            </div>
-
-            <div>
-              <label className="label-sm block mb-1.5">Email</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
-                <input name="email" type="email" value={form.email} onChange={handleChange}
-                  className="input-field !pl-10" placeholder="you@example.com" required />
-              </div>
-            </div>
-
-            <div>
-              <label className="label-sm block mb-1.5">Phone (Optional)</label>
-              <div className="relative">
-                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
-                <input name="phone" type="tel" value={form.phone} onChange={handleChange}
-                  className="input-field !pl-10" placeholder="+91 98765 43210" />
-              </div>
-            </div>
-
-            <div>
-              <label className="label-sm block mb-1.5">Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
-                <input name="password" type="password" value={form.password} onChange={handleChange}
-                  className="input-field !pl-10" placeholder="Min 6 characters" required />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full !py-3 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <UserPlus size={16} />
-                  Create Account
-                </>
-              )}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-on-surface-variant mt-8">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary font-medium hover:text-indigo-400 transition-colors">Sign in</Link>
-          </p>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
