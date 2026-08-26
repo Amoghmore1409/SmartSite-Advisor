@@ -4,10 +4,13 @@ import { motion } from 'framer-motion';
 import { propertyAPI } from '../services/api';
 import ScoreRing from '../components/ui/ScoreRing';
 import ExplainerChatbot from '../components/ui/ExplainerChatbot';
+import NegotiationAdvisorModal from '../components/agents/NegotiationAdvisorModal';
+import PropertyMapView from '../components/property/PropertyMapView';
+import PropertyReportModal from '../components/property/PropertyReportModal';
 import { 
   Building2, MapPin, Bed, Bath, Maximize, ArrowLeft, Heart, 
   Share2, Sparkles, CloudSun, ShieldCheck, Phone, Mail, CheckCircle2,
-  TrendingUp, Compass, Calendar, DollarSign
+  TrendingUp, Compass, Calendar, DollarSign, Handshake, FileText
 } from 'lucide-react';
 
 export default function PropertyDetails() {
@@ -16,6 +19,10 @@ export default function PropertyDetails() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const [isNegotiationOpen, setIsNegotiationOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [activePois, setActivePois] = useState([]);
+  const [poiCategory, setPoiCategory] = useState(null);
 
   useEffect(() => {
     if (id) fetchPropertyDetails();
@@ -192,6 +199,28 @@ export default function PropertyDetails() {
               ))}
             </div>
           </div>
+
+          {/* LARGE EXPONSIVE INTERACTIVE MAP SECTION */}
+          <div className="glass-card p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <MapPin size={22} className="text-indigo-600" /> Interactive Spatial & Neighborhood Map
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Explore surrounding infrastructure, transit connectivity, and regional neighborhood data.</p>
+              </div>
+              <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-100">
+                GPS Verified
+              </span>
+            </div>
+
+            <PropertyMapView 
+              properties={[property]} 
+              customPois={activePois}
+              activePoiCategory={poiCategory}
+              heightClass="h-[480px]" 
+            />
+          </div>
         </div>
 
         {/* Right Column: AI Assistant & Contact Seller */}
@@ -219,9 +248,23 @@ export default function PropertyDetails() {
 
             <button 
               onClick={() => alert(`Inquiry sent to ${seller?.name || 'Seller'}! They will reach out shortly.`)}
-              className="btn-emerald w-full !py-3 text-xs flex items-center justify-center gap-2"
+              className="btn-emerald w-full !py-3 text-xs flex items-center justify-center gap-2 mb-2"
             >
               <Phone size={14} /> Request Callback
+            </button>
+
+            <button
+              onClick={() => setIsNegotiationOpen(true)}
+              className="w-full py-3 px-4 rounded-2xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2 mb-2"
+            >
+              <Handshake size={16} /> Get AI Negotiation Strategy
+            </button>
+
+            <button
+              onClick={() => setIsReportOpen(true)}
+              className="w-full py-3 px-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2"
+            >
+              <FileText size={16} /> Download AI Audit Report
             </button>
           </div>
 
@@ -247,9 +290,30 @@ export default function PropertyDetails() {
           </div>
 
           {/* Explainer AI Bot */}
-          <ExplainerChatbot property={property} color="#6366f1" />
+          <ExplainerChatbot 
+            property={property} 
+            color="#6366f1" 
+            onPoiUpdate={(pois, category) => {
+              setActivePois(pois);
+              setPoiCategory(category);
+            }}
+          />
         </div>
       </div>
+
+      {/* Negotiation Deal Advisor Modal */}
+      <NegotiationAdvisorModal
+        isOpen={isNegotiationOpen}
+        onClose={() => setIsNegotiationOpen(false)}
+        property={property}
+      />
+
+      {/* AI Investment Report Modal */}
+      <PropertyReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        property={property}
+      />
     </div>
   );
 }

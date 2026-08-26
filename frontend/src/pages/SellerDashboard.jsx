@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sellerAPI, propertyAPI } from '../services/api';
 import ScoreRing from '../components/ui/ScoreRing';
+import ConstructorUpgradeWidget from '../components/agents/ConstructorUpgradeWidget';
 import {
   BarChart3, TrendingUp, Eye, Heart, MessageCircle, Plus,
   ArrowUpRight, ChevronRight, Sparkles, Target, Zap,
@@ -217,6 +218,9 @@ export default function SellerDashboard() {
               </div>
             )}
           </motion.div>
+
+          {/* Autonomous Constructor Upgrade Agent Widget */}
+          <ConstructorUpgradeWidget property={selectedProperty || insights[0]?.property} />
 
           {/* Properties List */}
           <motion.div variants={fadeUp} custom={3} initial="hidden" animate="visible" className="glass-card p-6">

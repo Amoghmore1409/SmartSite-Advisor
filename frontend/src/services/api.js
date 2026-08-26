@@ -65,4 +65,16 @@ export const sellerAPI = {
   getAnalytics: (sellerId) => api.get('/seller/analytics', { params: { sellerId } }),
 };
 
+// ── Agentic AI Swarm API ─────────────────────
+export const agentAPI = {
+  profileBuyer: (data) => api.post('/agents/profile', data),
+  evaluateValuation: (data) => api.post('/agents/valuation', data),
+  evaluateGeoSpatial: (data) => api.post('/agents/geospatial', data),
+  strategizeNegotiation: (data) => api.post('/agents/negotiate', data),
+  evaluateUpgrade: (data) => api.post('/agents/upgrade', data),
+  runDebate: (data) => api.post('/agents/debate', data),
+  harvestListings: (data) => api.post('/agents/scrape/search', data),
+  syncSingleProperty: (propertyId) => api.post(`/agents/scrape/sync/${propertyId}`),
+};
+
 export default api;

@@ -21,6 +21,13 @@ export default function PropertyCard({ property, onCompare, isSelected }) {
           ⭐ {score}/100
         </div>
 
+        {/* Live Scraped Verification Badge */}
+        <div className="absolute bottom-3 left-3 bg-emerald-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-md">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Verified Live</span>
+          <span className="text-emerald-400/80">• {property.sourcePortal || 'Housing.com'}</span>
+        </div>
+
         {/* Selection Checkbox */}
         <label className="absolute top-4 left-4 flex items-center justify-center w-6 h-6 bg-white rounded border-2 cursor-pointer transition-all"
                style={{ borderColor: isSelected ? '#ff6b35' : '#ccc' }}>

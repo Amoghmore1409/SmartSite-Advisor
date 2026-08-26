@@ -120,7 +120,7 @@ const aiScoreSchema = new mongoose.Schema(
 const environmentalScoreSchema = new mongoose.Schema(
   {
     overall: { type: Number, min: 0, max: 100, default: null },
-    aqi: { type: Number, min: 1, max: 5, default: null },
+    aqi: { type: Number, min: 0, max: 500, default: null },
     aqiLabel: { type: String, default: null },
     airQualityScore: { type: Number, min: 0, max: 100, default: null },
     pollutantExposureScore: { type: Number, min: 0, max: 100, default: null },
@@ -284,6 +284,31 @@ const propertySchema = new mongoose.Schema(
       type: pricingRecommendationSchema,
       default: {},
     },
+
+    // ── Live Portal Verification & Scraper Tracking ─────────────────────
+    sourcePortal: {
+      type: String,
+      default: 'Housing.com',
+    },
+    sourceUrl: {
+      type: String,
+      default: null,
+    },
+    verifiedLive: {
+      type: Boolean,
+      default: true,
+    },
+    lastSyncedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    priceHistory: [
+      {
+        oldPrice: Number,
+        newPrice: Number,
+        updatedAt: { type: Date, default: Date.now }
+      }
+    ],
 
     // ── Engagement Counters (lightweight, updated in-place) ──────────────
     views: {

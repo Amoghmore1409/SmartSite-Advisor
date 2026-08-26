@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { buyerAPI, propertyAPI } from '../services/api';
 import ScoreRing from '../components/ui/ScoreRing';
 import ExplainerChatbot from '../components/ui/ExplainerChatbot';
+import AgentDebateWidget from '../components/agents/AgentDebateWidget';
 import {
   GitCompare, Trophy, MapPin, Bed, Bath, Maximize,
   Sparkles, CheckCircle2, AlertTriangle, TrendingUp, Zap, ChevronDown,
@@ -230,6 +231,9 @@ export default function ComparisonDashboard() {
             Easy-to-understand breakdown of costs, commuting, lifestyle match, and pros & cons.
           </p>
         </div>
+
+        {/* Live Multi-Agent Swarm Debate */}
+        <AgentDebateWidget properties={comparedProperties} />
 
         {/* Tab View Selector */}
         <div className="flex items-center gap-1 bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300">

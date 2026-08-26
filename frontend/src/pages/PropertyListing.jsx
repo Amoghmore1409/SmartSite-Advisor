@@ -1,14 +1,18 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { propertyAPI } from '../services/api';
 import PropertyCard from '../components/cards/PropertyCard';
-import { Search, SlidersHorizontal, MapPin, ChevronDown, Sparkles, Filter } from 'lucide-react';
+import PropertyMapView from '../components/property/PropertyMapView';
+import PropertyReportModal from '../components/property/PropertyReportModal';
+import { Search, SlidersHorizontal, MapPin, ChevronDown, Sparkles, Filter, LayoutGrid, Map } from 'lucide-react';
 
 export default function PropertyListing() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ propertyType: '', sort: '' });
+  const [viewMode, setViewMode] = useState('grid');
+  const [selectedReportProperty, setSelectedReportProperty] = useState(null);
 
   useEffect(() => {
     fetchProperties();
@@ -17,7 +21,7 @@ export default function PropertyListing() {
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      const res = await propertyAPI.getAll();
+      const res = await propertyAPI.getAll({ limit: 50 });
       if (res.data?.success) {
         setProperties(res.data.data.properties || res.data.data || []);
       } else if (Array.isArray(res.data)) {
@@ -30,11 +34,41 @@ export default function PropertyListing() {
     }
   };
 
+  // Natural Language Property Matcher
+  const getHighlightedIds = () => {
+    if (!search || search.trim() === '') return [];
+    const q = search.toLowerCase();
+    
+    return properties
+      .filter(p => {
+        const titleMatch = p.title?.toLowerCase().includes(q);
+        const cityMatch = p.location?.city?.toLowerCase().includes(q);
+        const addressMatch = p.location?.address?.toLowerCase().includes(q);
+        const typeMatch = p.propertyType?.toLowerCase().includes(q);
+        
+        // Spec checks (3bhk, 2bhk, luxury, clean air)
+        let specMatch = false;
+        if (q.includes('3bhk') || q.includes('3 bhk')) specMatch = p.specifications?.bedrooms === 3;
+        if (q.includes('2bhk') || q.includes('2 bhk')) specMatch = p.specifications?.bedrooms === 2;
+        if (q.includes('4bhk') || q.includes('4 bhk')) specMatch = p.specifications?.bedrooms === 4;
+        if (q.includes('clean air') || q.includes('aqi')) specMatch = (p.environmentScore?.aqi || 100) <= 45;
+        if (q.includes('villa')) specMatch = p.propertyType === 'Villa';
+        if (q.includes('luxury')) specMatch = p.price >= 30000000;
+        if (q.includes('affordable') || q.includes('under 1 cr')) specMatch = p.price <= 10000000;
+
+        return titleMatch || cityMatch || addressMatch || typeMatch || specMatch;
+      })
+      .map(p => p._id || p.id);
+  };
+
+  const highlightedIds = getHighlightedIds();
+
   const filtered = properties
     .filter(p => {
       if (search) {
         const q = search.toLowerCase();
-        return p.title?.toLowerCase().includes(q) || p.location?.city?.toLowerCase().includes(q) || p.location?.address?.toLowerCase().includes(q);
+        const highlighted = highlightedIds.includes(p._id || p.id);
+        return highlighted || p.title?.toLowerCase().includes(q) || p.location?.city?.toLowerCase().includes(q) || p.location?.address?.toLowerCase().includes(q);
       }
       return true;
     })
@@ -66,9 +100,25 @@ export default function PropertyListing() {
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
             Find Your Next <span className="text-ai-indigo">Genius</span> Investment
           </h1>
-          <p className="text-lg text-slate-600">
+          <p className="text-lg text-slate-600 mb-6">
             {filtered.length} exceptional properties curated and scored by AI for your portfolio.
           </p>
+
+          {/* VIEW TOGGLE */}
+          <div className="inline-flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-slate-950 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              <LayoutGrid size={16} /> Grid View
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${viewMode === 'map' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-600 hover:bg-indigo-50'}`}
+            >
+              <Map size={16} /> Interactive Map View
+            </button>
+          </div>
         </motion.div>
 
         {/* Search & Filters Glass Bar */}
@@ -121,7 +171,7 @@ export default function PropertyListing() {
           </div>
         </motion.div>
 
-        {/* Property Grid */}
+        {/* Property Grid or Map View */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
@@ -130,19 +180,25 @@ export default function PropertyListing() {
                 <div className="p-6 space-y-4">
                   <div className="h-6 bg-slate-200 rounded-md w-3/4" />
                   <div className="h-4 bg-slate-200 rounded-md w-1/2" />
-                  <div className="h-px bg-slate-100 my-4" />
-                  <div className="flex justify-between">
-                    <div className="h-8 bg-slate-200 rounded-md w-1/3" />
-                    <div className="h-8 bg-slate-200 rounded-lg w-24" />
-                  </div>
                 </div>
               </div>
             ))}
           </div>
+        ) : viewMode === 'map' ? (
+          <PropertyMapView 
+            properties={properties} 
+            highlightedPropertyIds={highlightedIds}
+            onOpenReport={(p) => setSelectedReportProperty(p)} 
+            heightClass="h-[750px]"
+          />
         ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filtered.map((prop, i) => (
-              <PropertyCard key={prop._id || i} property={prop} />
+              <PropertyCard 
+                key={prop._id || i} 
+                property={prop} 
+                onOpenReport={(p) => setSelectedReportProperty(p)}
+              />
             ))}
           </div>
         ) : (
@@ -165,6 +221,15 @@ export default function PropertyListing() {
           </motion.div>
         )}
       </div>
+
+      {/* AI INVESTMENT & ENVIRONMENTAL REPORT MODAL */}
+      {selectedReportProperty && (
+        <PropertyReportModal 
+          property={selectedReportProperty} 
+          isOpen={!!selectedReportProperty} 
+          onClose={() => setSelectedReportProperty(null)} 
+        />
+      )}
     </div>
   );
 }

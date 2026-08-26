@@ -14,6 +14,7 @@ import SellerDashboard from './pages/SellerDashboard';
 import CreateProperty from './pages/CreateProperty';
 import PropertyDetails from './pages/PropertyDetails';
 import NotFound from './pages/NotFound';
+import ParichayVoiceAssistant from './components/agents/ParichayVoiceAssistant';
 
 // Protected Route wrapper
 function ProtectedRoute({ children, requiredRole }) {
@@ -65,6 +66,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ParichayVoiceAssistant />
         <Routes>
           <Route element={<Layout />}>
             {/* Public */}

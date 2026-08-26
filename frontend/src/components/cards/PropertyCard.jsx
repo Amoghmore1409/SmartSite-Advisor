@@ -1,10 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Bed, Bath, Maximize, Heart, TrendingUp, Sparkles, Building2, CloudSun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { propertyAPI } from '../../services/api';
 
-export default function PropertyCard({ property, matchPercentage }) {
+export default function PropertyCard({ property, matchPercentage, onOpenReport }) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -75,6 +75,15 @@ export default function PropertyCard({ property, matchPercentage }) {
         {/* Top Badges */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <div className="flex flex-col gap-2">
+            {property.verifiedLive && (
+              <div className="px-3 py-1 rounded-full bg-emerald-500/90 backdrop-blur-md border border-emerald-400/50 flex items-center gap-1.5 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <span className="text-[11px] font-bold text-white tracking-wide uppercase">
+                  Verified Live ({property.sourcePortal || 'Portal'})
+                </span>
+              </div>
+            )}
+
             {match > 0 ? (
               <div className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-md border ${theme.bg} ${theme.border}`}>
                 <Sparkles size={14} className={theme.text} />
@@ -138,18 +147,31 @@ export default function PropertyCard({ property, matchPercentage }) {
         </div>
 
         {/* Footer Row */}
-        <div className="flex items-center justify-between mt-auto pt-2">
+        <div className="flex items-center justify-between mt-auto pt-2 gap-2">
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Price</span>
-            <span className="text-2xl font-extrabold text-slate-900">{formatPrice(price)}</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Price</span>
+            <span className="text-xl font-extrabold text-slate-900">{formatPrice(price)}</span>
           </div>
-          <Link 
-            to={`/property/${_id}`} 
-            onClick={handleViewDetails}
-            className="h-10 px-4 flex items-center justify-center rounded-xl bg-slate-50 text-slate-900 font-semibold text-sm border border-slate-200 hover:bg-slate-900 hover:text-white transition-all duration-300"
-          >
-            View Details
-          </Link>
+          <div className="flex items-center gap-2">
+            {onOpenReport && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  onOpenReport(property);
+                }}
+                className="h-10 px-3 flex items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 font-semibold text-xs border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all duration-300"
+              >
+                AI Report
+              </button>
+            )}
+            <Link 
+              to={`/property/${_id}`} 
+              onClick={handleViewDetails}
+              className="h-10 px-4 flex items-center justify-center rounded-xl bg-slate-900 text-white font-semibold text-xs border border-slate-900 hover:bg-slate-800 transition-all duration-300"
+            >
+              Details
+            </Link>
+          </div>
         </div>
       </div>
     </motion.div>
