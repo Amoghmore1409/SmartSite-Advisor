@@ -1,37 +1,51 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+const { scrapeMagicBricks } = require('./scrapers/magicBricksScraper');
 
 /**
  * RealEstateScraperAgent
- * Autonomous agent that scrapes, extracts, and normalizes live real estate property data
- * from top Indian real estate portals (Housing.com, 99acres, MagicBricks) with primary focus on
- * Mumbai, Thane, and Navi Mumbai regions.
+ * Scrapes and normalizes live real estate property data for Mumbai, Thane, and
+ * Navi Mumbai. MagicBricks currently serves real listing HTML to a headless
+ * browser; Housing.com and 99acres return anti-bot blocks (406 / 403) even on
+ * a plain page load, so they cannot be live-scraped without a much larger
+ * evasion effort (residential proxies, fingerprint spoofing, etc.) — see
+ * README notes. If a live fetch fails or is unavailable, results fall back to
+ * a clearly-labeled static sample corpus instead of fabricating "verified live" data.
  */
 class RealEstateScraperAgent {
   /**
    * Scrapes live listings for a given city and locality.
-   * @param {Object} options - { city: 'Mumbai' | 'Thane' | 'Navi Mumbai', locality: string, propertyType: string }
+   * @param {Object} options - { city: 'Mumbai' | 'Thane' | 'Navi Mumbai', locality: string, limit: number, maxPages: number }
+   * @param {number} [options.maxPages=10] - max MagicBricks result pages to paginate through (~30 listings/page)
    */
-  static async scrapeListings({ city = 'Mumbai', locality = '', limit = 10 } = {}) {
-    console.log(`🤖 RealEstateScraperAgent: Initiating live harvest for [${city} - ${locality || 'All Regions'}]...`);
+  static async scrapeListings({ city = 'Mumbai', locality = '', limit = 300, maxPages = 10 } = {}) {
+    console.log(`🤖 RealEstateScraperAgent: Initiating live harvest for [${city} - ${locality || 'All Regions'}] (up to ${maxPages} pages)...`);
 
     const normalizedCity = this._normalizeCity(city);
     let scrapedResults = [];
+    let liveSourceUsed = false;
 
     try {
-      // 1. Live Web Attempt (e.g., Housing.com / 99acres URL search structure)
-      const liveListings = await this._attemptLiveFetch(normalizedCity, locality);
+      const liveListings = await scrapeMagicBricks({ city: normalizedCity, locality, limit, maxPages });
       if (liveListings && liveListings.length > 0) {
         scrapedResults = liveListings;
+        liveSourceUsed = true;
+      } else {
+        console.warn('⚠️ MagicBricks live fetch returned no listings (selectors may be stale, or the request was blocked).');
       }
     } catch (err) {
-      console.warn(`⚠️ Live portal endpoint returned anti-bot response, engaging fallback high-fidelity portal generator: ${err.message}`);
+      console.warn(`⚠️ MagicBricks live fetch failed: ${err.message}`);
     }
 
-    // 2. High-Fidelity Regional Harvester (Mumbai, Thane, Navi Mumbai Verified Real Estate Corpus)
     if (scrapedResults.length === 0) {
-      scrapedResults = this._generateRegionalCorpus(normalizedCity, locality);
+      console.warn('⚠️ No live listings available — returning static sample corpus (NOT live data).');
+      scrapedResults = this._generateRegionalCorpus(normalizedCity, locality).map((item) => ({
+        ...item,
+        verifiedLive: false,
+      }));
     }
+
+    console.log(liveSourceUsed
+      ? `✅ RealEstateScraperAgent: ${scrapedResults.length} live listings harvested from MagicBricks.`
+      : `ℹ️ RealEstateScraperAgent: served ${scrapedResults.length} static sample listings.`);
 
     return scrapedResults.slice(0, limit);
   }
@@ -44,42 +58,6 @@ class RealEstateScraperAgent {
     if (lower.includes('thane')) return 'Thane';
     if (lower.includes('navi') || lower.includes('vashi') || lower.includes('panvel')) return 'Navi Mumbai';
     return 'Mumbai';
-  }
-
-  /**
-   * Live Scraping via Axios + Cheerio for Housing.com / 99acres endpoints
-   */
-  static async _attemptLiveFetch(city, locality) {
-    const targetUrl = `https://housing.com/in/buy/real-estate-${city.toLowerCase().replace(/\s+/g, '_')}`;
-    const response = await axios.get(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      timeout: 4000
-    });
-
-    if (response.status === 200 && response.data) {
-      const $ = cheerio.load(response.data);
-      const items = [];
-
-      $('.card-container, article, .article-container').each((i, el) => {
-        const title = $(el).find('.card-title, h2, h3').text().trim();
-        const priceText = $(el).find('.price, .card-price').text().trim();
-        const loc = $(el).find('.subheading, .card-subtitle').text().trim();
-        if (title && priceText) {
-          items.push({
-            title,
-            rawPrice: priceText,
-            locality: loc || locality || city,
-            city,
-            sourcePortal: 'Housing.com'
-          });
-        }
-      });
-      return items;
-    }
-    return null;
   }
 
   /**

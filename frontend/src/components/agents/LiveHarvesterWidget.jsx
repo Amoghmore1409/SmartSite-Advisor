@@ -45,7 +45,7 @@ export default function LiveHarvesterWidget({ onHarvestComplete }) {
               <Globe className="w-3.5 h-3.5 animate-spin text-emerald-400" />
               Autonomous Scraper Agent
             </span>
-            <span className="text-xs text-gray-400">Sources: 99acres • Housing.com • MagicBricks</span>
+            <span className="text-xs text-gray-400">Live source: MagicBricks (Housing.com &amp; 99acres block automated access)</span>
           </div>
           <h2 className="text-xl font-extrabold text-white flex items-center gap-2">
             Live Property Data Harvester <Sparkles className="w-5 h-5 text-emerald-400" />
@@ -124,24 +124,36 @@ export default function LiveHarvesterWidget({ onHarvestComplete }) {
 
       {/* Sync Results Banner */}
       <AnimatePresence>
-        {syncStatus && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-4 p-3 bg-emerald-900/40 border border-emerald-500/50 rounded-xl flex items-center justify-between text-xs text-emerald-200"
-          >
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div>
-                <span className="font-bold text-white">Live Sync Complete:</span> Harvested & verified {syncStatus.count} live property listings in {selectedCity}!
+        {syncStatus && (() => {
+          const liveCount = (syncStatus.results || []).filter((r) => r.property?.verifiedLive).length;
+          const isFullyLive = liveCount === syncStatus.count && syncStatus.count > 0;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`mt-4 p-3 border rounded-xl flex items-center justify-between text-xs ${
+                isFullyLive
+                  ? 'bg-emerald-900/40 border-emerald-500/50 text-emerald-200'
+                  : 'bg-amber-900/30 border-amber-500/40 text-amber-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <ShieldCheck className={`w-5 h-5 shrink-0 ${isFullyLive ? 'text-emerald-400' : 'text-amber-400'}`} />
+                <div>
+                  <span className="font-bold text-white">Sync Complete:</span> {syncStatus.count} listing{syncStatus.count === 1 ? '' : 's'} processed for {selectedCity}
+                  {liveCount > 0 && ` (${liveCount} live from MagicBricks)`}
+                  {liveCount < syncStatus.count && ` — ${syncStatus.count - liveCount} from static sample data (no live listings were available)`}.
+                </div>
               </div>
-            </div>
-            <span className="text-emerald-400 font-mono font-bold bg-slate-950 px-2 py-1 rounded border border-emerald-500/30">
-              🟢 Live 100% Authentic
-            </span>
-          </motion.div>
-        )}
+              <span className={`font-mono font-bold bg-slate-950 px-2 py-1 rounded border ${
+                isFullyLive ? 'text-emerald-400 border-emerald-500/30' : 'text-amber-400 border-amber-500/30'
+              }`}>
+                {isFullyLive ? '🟢 Live' : '🟡 Partial/Sample'}
+              </span>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );

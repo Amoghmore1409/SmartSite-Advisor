@@ -86,7 +86,7 @@ export default function PropertyDetails() {
   }
 
   const { title, price, location, specifications, amenities, images, propertyType, aiScore, environmentScore, seller } = property;
-  const match = aiScore?.overall || 85;
+  const match = aiScore?.overall ?? null;
 
   return (
     <div className="container-app py-6 pb-16">
@@ -146,7 +146,13 @@ export default function PropertyDetails() {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white">
               <div className="flex items-center gap-4">
-                <ScoreRing score={match} size={64} label="Match" />
+                {match !== null ? (
+                  <ScoreRing score={match} size={64} label="Match" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/40 flex items-center justify-center text-center px-1">
+                    <span className="text-[9px] font-semibold text-white/60 leading-tight">Not yet scored</span>
+                  </div>
+                )}
                 <div>
                   <div className="text-lg font-extrabold">AI Compatibility Score</div>
                   <div className="text-xs text-slate-300">Scored using lifestyle factors & location connectivity</div>
@@ -275,16 +281,22 @@ export default function PropertyDetails() {
             </h4>
             <div className="space-y-3">
               <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100">
-                <span className="text-slate-500 font-medium">Estimated ROI</span>
-                <span className="font-bold text-emerald-600">+{aiScore?.roiPotential || 8.5}% / yr</span>
+                <span className="text-slate-500 font-medium">ROI Potential Score</span>
+                <span className="font-bold text-emerald-600">
+                  {aiScore?.roiPotential != null ? `${aiScore.roiPotential} / 100` : 'Not yet scored'}
+                </span>
               </div>
               <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100">
                 <span className="text-slate-500 font-medium">Transit Connectivity</span>
-                <span className="font-bold text-slate-800">{aiScore?.connectivityScore || 85} / 100</span>
+                <span className="font-bold text-slate-800">
+                  {aiScore?.connectivityScore != null ? `${aiScore.connectivityScore} / 100` : 'Not yet scored'}
+                </span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 font-medium">Environmental Health</span>
-                <span className="font-bold text-slate-800">{environmentScore?.overall || 88} / 100</span>
+                <span className="font-bold text-slate-800">
+                  {environmentScore?.overall != null ? `${environmentScore.overall} / 100` : 'Not yet scored'}
+                </span>
               </div>
             </div>
           </div>

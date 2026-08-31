@@ -169,20 +169,20 @@ export default function ExplainerChatbot({ property, color = '#6366f1', onPoiUpd
   };
 
   return (
-    <div className="glass-card mt-6 p-4 rounded-3xl flex flex-col md:flex-row gap-6 border border-slate-200">
-      
-      {/* Dynamic Mini Map Section */}
-      <div className="flex-1 rounded-2xl overflow-hidden relative border border-slate-200 min-h-[350px]">
-        <PropertyMapView 
-          properties={[property]} 
+    <div className="glass-card mt-6 p-4 rounded-3xl flex flex-col gap-6 border border-slate-200">
+
+      {/* Dynamic Map Section — full width so every pinned POI is fully visible */}
+      <div className="w-full rounded-2xl overflow-hidden relative border border-slate-200">
+        <PropertyMapView
+          properties={[property]}
           customPois={pois}
           activePoiCategory={poiCategory}
-          heightClass="h-[380px]"
+          heightClass="h-[420px]"
         />
       </div>
 
       {/* Chat Section */}
-      <div className="w-full md:w-[380px] lg:w-[420px] flex flex-col h-[380px] rounded-2xl overflow-hidden bg-slate-900 text-white shadow-xl">
+      <div className="w-full flex flex-col h-[380px] rounded-2xl overflow-hidden bg-slate-900 text-white shadow-xl">
         
         {/* Chat Header */}
         <div className="h-14 border-b border-slate-800 flex items-center px-4 bg-slate-950/80">

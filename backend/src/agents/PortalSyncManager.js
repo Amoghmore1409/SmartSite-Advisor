@@ -1,5 +1,6 @@
 const Property = require('../models/Property');
 const RealEstateScraperAgent = require('./RealEstateScraperAgent');
+const { scoringPropertyAsync } = require('../services/propertyService');
 
 /**
  * PortalSyncManager
@@ -10,10 +11,10 @@ class PortalSyncManager {
   /**
    * Harvests and auto-syncs live property data for a given region into MongoDB.
    */
-  static async harvestAndSyncRegion({ city = 'Mumbai', locality = '', limit = 10 } = {}) {
+  static async harvestAndSyncRegion({ city = 'Mumbai', locality = '', limit = 300, maxPages = 10 } = {}) {
     try {
       console.log(`🔄 PortalSyncManager: Syncing database with live portal data for [${city}]...`);
-      const scrapedListings = await RealEstateScraperAgent.scrapeListings({ city, locality, limit });
+      const scrapedListings = await RealEstateScraperAgent.scrapeListings({ city, locality, limit, maxPages });
 
       const syncedDocs = [];
 
@@ -42,13 +43,21 @@ class PortalSyncManager {
             priceChanged = true;
           }
 
-          existing.verifiedLive = true;
+          existing.verifiedLive = item.verifiedLive !== false;
           existing.lastSyncedAt = now;
           existing.sourcePortal = item.sourcePortal || existing.sourcePortal;
-          existing.aiScore = item.aiScore || existing.aiScore;
-          existing.environmentScore = item.environmentScore || existing.environmentScore;
 
           await existing.save();
+
+          // Re-score when the price moved (it's a scoring input) or the property
+          // was never successfully scored in the first place — non-blocking, same
+          // as the real scoring path new properties go through on creation.
+          if (priceChanged || existing.aiScore?.overall == null) {
+            scoringPropertyAsync(existing).catch((err) => {
+              console.error(`[PortalSyncManager] Re-scoring failed for ${existing._id}:`, err.message);
+            });
+          }
+
           syncedDocs.push({ property: existing, action: priceChanged ? 'PRICE_UPDATED' : 'SYNCED' });
         } else {
           // Find default seller user for scraped listings
@@ -82,16 +91,23 @@ class PortalSyncManager {
             specifications: item.specifications || { bedrooms: 2, bathrooms: 2, carpetArea: 900 },
             amenities: item.amenities || ['Security', 'Lift', 'Power Backup'],
             images: item.images || ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1000&q=80'],
-            aiScore: item.aiScore || { overall: 88 },
-            environmentScore: item.environmentScore || { overall: 85, aqi: 45, aqiLabel: 'Good' },
+            // aiScore/environmentScore are intentionally left unset here — they used to be
+            // hardcoded to { overall: 88 } / { overall: 85, aqi: 45 } for every single scraped
+            // property, regardless of actual location or amenities. Real scores come from the
+            // same scoringPropertyAsync pipeline manually-created properties go through, below.
             sourcePortal: item.sourcePortal || 'Housing.com',
             sourceUrl: item.sourceUrl,
-            verifiedLive: true,
+            verifiedLive: item.verifiedLive !== false,
             lastSyncedAt: now,
             status: 'available'
           });
 
           await newDoc.save();
+
+          scoringPropertyAsync(newDoc).catch((err) => {
+            console.error(`[PortalSyncManager] Scoring failed for ${newDoc._id}:`, err.message);
+          });
+
           syncedDocs.push({ property: newDoc, action: 'CREATED' });
         }
       }
