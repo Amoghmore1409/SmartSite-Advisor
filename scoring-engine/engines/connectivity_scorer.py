@@ -10,7 +10,7 @@ Calculates scores for:
 Total: 0-100
 """
 
-from config import INFRASTRUCTURE_DISTANCES
+from config import INFRASTRUCTURE_DISTANCES, resolve_area_key
 
 
 def calculate_connectivity_score(property_data: dict) -> dict:
@@ -35,8 +35,11 @@ def calculate_connectivity_score(property_data: dict) -> dict:
     location = property_data.get("location", {})
     city = location.get("city", "Unknown")
 
-    # Get infrastructure data
-    infra = INFRASTRUCTURE_DISTANCES.get(city, INFRASTRUCTURE_DISTANCES.get("Default"))
+    # Resolve by locality (matched from the address) first — see resolve_area_key
+    # in config.py for why looking up by city alone collapses most properties
+    # onto one generic bucket.
+    area_key = resolve_area_key(location, INFRASTRUCTURE_DISTANCES)
+    infra = INFRASTRUCTURE_DISTANCES[area_key]
 
     metro_dist = infra["nearest_metro"]
     highway_dist = infra["highway_distance"]

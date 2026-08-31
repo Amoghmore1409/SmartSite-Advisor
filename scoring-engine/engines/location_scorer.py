@@ -11,7 +11,7 @@ Calculates scores for:
 Total: 0-100
 """
 
-from config import AREA_DATA
+from config import AREA_DATA, resolve_area_key
 
 
 def calculate_location_score(property_data: dict) -> dict:
@@ -38,8 +38,11 @@ def calculate_location_score(property_data: dict) -> dict:
     city = location.get("city", "Unknown")
     address = location.get("address", "Unknown")
 
-    # Get area data (fallback to default if not found)
-    area_config = AREA_DATA.get(city, AREA_DATA.get("Default"))
+    # Resolve by locality (matched from the address) first, since that's what
+    # actually differentiates quality within a city — falls back to city-level,
+    # then "Default", only when no known locality is recognized.
+    area_key = resolve_area_key(location, AREA_DATA)
+    area_config = AREA_DATA[area_key]
 
     components = {
         "areaPopularity": area_config["popularity"],

@@ -17,6 +17,8 @@ require('dotenv').config(); // Step 1: Must load env vars before anything else
 
 const app = require('./app');
 const connectDB = require('./src/config/db');
+const { startAutoSyncJob } = require('./src/jobs/autoSyncJob');
+const { startScoringEngine } = require('./src/jobs/scoringEngineProcess');
 
 const PORT = process.env.PORT || 5000;
 
@@ -25,7 +27,15 @@ const startServer = async () => {
   // If this fails, connectDB calls process.exit(1) — server won't start.
   await connectDB();
 
-  // Step 3: Start the HTTP server.
+  // Step 3: Start the Python scoring-engine microservice (no-op if already running).
+  // Without this, aiScore silently never gets computed unless someone remembers to
+  // start it manually in a separate terminal.
+  await startScoringEngine();
+
+  // Step 4: Start the recurring live-listings sync (once daily).
+  startAutoSyncJob();
+
+  // Step 5: Start the HTTP server.
   app.listen(PORT, () => {
     console.log(`\n🚀 SmartSite Server running in [${process.env.NODE_ENV}] mode`);
     console.log(`📡 Listening on: http://localhost:${PORT}`);

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { buyerAPI, propertyAPI } from '../services/api';
 import PropertyCard from '../components/cards/PropertyCard';
-import LiveHarvesterWidget from '../components/agents/LiveHarvesterWidget';
 import PropertyMapView from '../components/property/PropertyMapView';
 import PropertyReportModal from '../components/property/PropertyReportModal';
 import { Brain, LayoutGrid, List, Filter, ArrowUpDown, Sparkles, Map, Leaf, Banknote, TrendingUp } from 'lucide-react';
@@ -103,9 +102,6 @@ export default function BuyerDashboard() {
             </button>
           </div>
         </motion.div>
-
-        {/* LIVE WEBSITES SCRAPING & HARVESTING AGENT */}
-        <LiveHarvesterWidget onHarvestComplete={() => fetchData()} />
       </motion.div>
 
       <div className="max-w-7xl mx-auto space-y-8">
@@ -191,7 +187,7 @@ export default function BuyerDashboard() {
                 <PropertyCard 
                   key={prop._id || i} 
                   property={prop} 
-                  matchPercentage={prop.matchScore || prop.aiScore?.overall || 75} 
+                  matchPercentage={prop.matchScore || prop.aiScore?.overall}
                   onOpenReport={(p) => setSelectedReportProperty(p)}
                 />
               ))}

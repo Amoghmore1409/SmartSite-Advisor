@@ -21,10 +21,11 @@ export default function PropertyReportModal({ property, isOpen, onClose }) {
     return `₹${p.toLocaleString('en-IN')}`;
   };
 
-  const aiScore = property.aiScore?.overall || 88;
-  const envScore = property.environmentScore?.overall || 85;
-  const aqi = property.environmentScore?.aqi || 42;
-  const roi = property.aiScore?.roiPotential || 9.4;
+  const aiScore = property.aiScore?.overall ?? null;
+  const envScore = property.environmentScore?.overall ?? null;
+  const aqi = property.environmentScore?.aqi ?? null;
+  const roi = property.aiScore?.roiPotential ?? null;
+  const notScored = 'Not yet scored';
 
   return (
     <AnimatePresence>
@@ -78,7 +79,7 @@ export default function PropertyReportModal({ property, isOpen, onClose }) {
                 <span className="text-xs font-semibold uppercase text-slate-400 block mb-1">Target Valuation</span>
                 <span className="text-2xl font-black text-slate-900 block">{formatPrice(property.price)}</span>
                 <span className="text-xs font-medium text-emerald-600 flex items-center justify-end gap-1 mt-1">
-                  <TrendingUp size={12} /> {roi}% Est. 5-Yr ROI
+                  <TrendingUp size={12} /> {roi != null ? `ROI Score: ${roi}/100` : notScored}
                 </span>
               </div>
             </div>
@@ -87,28 +88,32 @@ export default function PropertyReportModal({ property, isOpen, onClose }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100 p-4 rounded-2xl">
                 <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1">Overall SmartScore</span>
-                <span className="text-3xl font-black text-indigo-900">{aiScore}/100</span>
-                <span className="text-xs font-medium text-indigo-700 block mt-1">High Buying Match</span>
+                <span className="text-3xl font-black text-indigo-900">{aiScore != null ? `${aiScore}/100` : '—'}</span>
+                <span className="text-xs font-medium text-indigo-700 block mt-1">{aiScore != null ? 'AI-Scored' : notScored}</span>
               </div>
 
               <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-100 p-4 rounded-2xl">
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider block mb-1">Air Quality (AQI)</span>
-                <span className="text-3xl font-black text-emerald-900">{aqi} AQI</span>
-                <span className="text-xs font-medium text-emerald-700 block mt-1">{property.environmentScore?.aqiLabel || 'Clean Air Zone'}</span>
+                <span className="text-3xl font-black text-emerald-900">{aqi != null ? `${aqi} AQI` : '—'}</span>
+                <span className="text-xs font-medium text-emerald-700 block mt-1">{aqi != null ? (property.environmentScore?.aqiLabel || 'Unknown') : notScored}</span>
               </div>
 
               <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-100 p-4 rounded-2xl">
-                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider block mb-1">5-Yr Appreciation</span>
-                <span className="text-3xl font-black text-amber-900">+{roi}%</span>
-                <span className="text-xs font-medium text-amber-700 block mt-1">Strong Capital Growth</span>
+                <span className="text-xs font-bold text-amber-600 uppercase tracking-wider block mb-1">ROI Potential Score</span>
+                <span className="text-3xl font-black text-amber-900">{roi != null ? `${roi}/100` : '—'}</span>
+                <span className="text-xs font-medium text-amber-700 block mt-1">{roi != null ? 'Composite ROI score' : notScored}</span>
               </div>
 
               <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-100 p-4 rounded-2xl">
                 <span className="text-xs font-bold text-purple-600 uppercase tracking-wider block mb-1">Data Verification</span>
                 <span className="text-lg font-black text-purple-900 flex items-center gap-1 mt-1">
-                  <CheckCircle2 size={18} className="text-emerald-500" /> Verified Live
+                  {property.verifiedLive ? (
+                    <><CheckCircle2 size={18} className="text-emerald-500" /> Verified Live</>
+                  ) : (
+                    <span className="text-slate-500">Unverified / Sample Data</span>
+                  )}
                 </span>
-                <span className="text-xs font-medium text-purple-700 block mt-1">{property.sourcePortal || 'Housing.com'}</span>
+                <span className="text-xs font-medium text-purple-700 block mt-1">{property.sourcePortal || 'Unknown source'}</span>
               </div>
             </div>
 
@@ -126,14 +131,14 @@ export default function PropertyReportModal({ property, isOpen, onClose }) {
                   </span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 font-medium block mb-1">Estimated Monthly Rent</span>
+                  <span className="text-xs text-slate-500 font-medium block mb-1">ROI Potential Score</span>
                   <span className="font-bold text-slate-900 text-lg">
-                    ₹{Math.round((property.price * 0.0028) / 1000)}k / month
+                    {roi != null ? `${roi} / 100` : notScored}
                   </span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 font-medium block mb-1">Estimated Rental Yield</span>
-                  <span className="font-bold text-emerald-600 text-lg">3.4% p.a.</span>
+                  <span className="text-xs text-slate-500 font-medium block mb-1">Rental Yield Estimate</span>
+                  <span className="font-bold text-emerald-600 text-lg">Not available</span>
                 </div>
               </div>
             </div>
@@ -147,33 +152,36 @@ export default function PropertyReportModal({ property, isOpen, onClose }) {
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-xs font-semibold text-slate-600">Green Cover Index</span>
-                  <span className="font-bold text-emerald-600 text-sm">{property.environmentScore?.greenCover || 88}%</span>
+                  <span className="font-bold text-emerald-600 text-sm">{property.environmentScore?.greenCover != null ? `${property.environmentScore.greenCover}%` : notScored}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-xs font-semibold text-slate-600">Ambient Noise Level</span>
-                  <span className="font-bold text-indigo-600 text-sm">{property.environmentScore?.noiseLevel || 'Low'}</span>
+                  <span className="font-bold text-indigo-600 text-sm">{property.environmentScore?.noiseLevel || notScored}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-xs font-semibold text-slate-600">Environmental Rating</span>
-                  <span className="font-bold text-emerald-600 text-sm">{envScore}/100</span>
+                  <span className="font-bold text-emerald-600 text-sm">{envScore != null ? `${envScore}/100` : notScored}</span>
                 </div>
               </div>
             </div>
 
-            {/* AGENT SWARM CONSENSUS RECOMMENDATION */}
-            <div className="p-6 bg-indigo-950 text-white rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-1.5">
-                  <Award size={16} /> Multi-Agent Swarm Final Consensus
-                </span>
-                <span className="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                  Strong Buy Recommendation
-                </span>
+            {/* AI SCORING SUMMARY */}
+            {(aiScore != null || envScore != null || roi != null) && (
+              <div className="p-6 bg-indigo-950 text-white rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-1.5">
+                    <Award size={16} /> AI Scoring Summary
+                  </span>
+                </div>
+                <p className="text-sm text-indigo-100 leading-relaxed font-medium">
+                  {[
+                    aiScore != null && `Overall SmartScore is ${aiScore}/100.`,
+                    aqi != null && `Air quality reads ${aqi} AQI (${property.environmentScore?.aqiLabel || 'Unknown'}).`,
+                    roi != null && `ROI potential score is ${roi}/100.`,
+                  ].filter(Boolean).join(' ')}
+                </p>
               </div>
-              <p className="text-sm text-indigo-100 leading-relaxed font-medium">
-                "Based on comparative evaluation across 12 regional MMR listings, this property exhibits exceptional pricing alignment with high environmental health standards (AQI {aqi}). The 5-year capital appreciation projection (+{roi}%) outperforms average regional benchmarks by 2.4%."
-              </p>
-            </div>
+            )}
 
             {/* FOOTER VERIFICATION STAMP */}
             <div className="border-t border-slate-200 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-2">

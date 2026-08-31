@@ -10,7 +10,7 @@ Calculates scores for:
 Total: 0-100
 """
 
-from config import AREA_DATA, RENTAL_YIELD_THRESHOLDS, APPRECIATION_THRESHOLDS, LIQUIDITY_THRESHOLDS
+from config import AREA_DATA, RENTAL_YIELD_THRESHOLDS, APPRECIATION_THRESHOLDS, LIQUIDITY_THRESHOLDS, resolve_area_key
 
 
 def calculate_roi_score(property_data: dict) -> dict:
@@ -34,22 +34,24 @@ def calculate_roi_score(property_data: dict) -> dict:
     """
     price = property_data.get("price", 0)
     location = property_data.get("location", {})
-    city = location.get("city", "Unknown")
     engagement = property_data.get("engagementMetrics", {})
 
-    # Get area data for appreciation potential
-    area_config = AREA_DATA.get(city, AREA_DATA.get("Default"))
+    # Resolve by locality (matched from the address) first, same as location/connectivity
+    # scoring — an area's rental yield varies by neighborhood, not just by city.
+    area_key = resolve_area_key(location, AREA_DATA)
+    area_config = AREA_DATA[area_key]
     appreciation_pct = area_config["average_appreciation"]
     liquidity_days = area_config["market_liquidity_days"]
 
-    # Get rental estimate from property data or calculate
-    # For MVP, we'll use a simple formula: estimated rent = price * 1.2% / 12
-    estimated_annual_rent = price * 0.012
-    if estimated_annual_rent == 0:
-        estimated_annual_rent = 100000  # Default fallback
-
-    # Calculate rental yield (0-40)
-    rental_yield_pct = (estimated_annual_rent / price * 100) if price > 0 else 0
+    # Rental yield comes from the area's known gross yield assumption, NOT derived
+    # back out of price — a previous version computed
+    # `estimated_annual_rent = price * 0.012` and then
+    # `rental_yield_pct = estimated_annual_rent / price * 100`, which algebraically
+    # cancels the price out and always equals exactly 1.2%, regardless of the
+    # property. Using the area's real rental_yield_pct fixes that and lets yield
+    # actually vary by location.
+    rental_yield_pct = area_config["rental_yield_pct"]
+    estimated_annual_rent = price * (rental_yield_pct / 100) if price > 0 else 0
 
     rental_yield_score = 10  # Default
     for threshold, score in RENTAL_YIELD_THRESHOLDS:

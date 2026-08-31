@@ -84,6 +84,22 @@ function MapRecenter({ center }) {
   return null;
 }
 
+// Fits the map viewport to include the property marker plus every pinned POI,
+// so newly-plotted points (which can be several km from the property) are never cropped out.
+function FitBoundsToMarkers({ points }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!points || points.length === 0) return;
+    if (points.length === 1) {
+      map.setView(points[0], 14);
+      return;
+    }
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+  }, [points, map]);
+  return null;
+}
+
 export default function PropertyMapView({ 
   properties, 
   onSelectProperty, 
@@ -105,6 +121,12 @@ export default function PropertyMapView({
 
   const defaultZoom = isSingleProperty ? 14 : 11;
 
+  // When the AI chat has pinned nearby POIs, fit the viewport to the property + all POIs
+  // so nothing pinned falls outside the visible map.
+  const poiFitPoints = isSingleProperty && customPois.length > 0
+    ? [defaultCenter, ...customPois.map((poi) => [poi.lat, poi.lng])]
+    : null;
+
   const formatPrice = (p) => {
     if (!p) return 'Price on Request';
     if (p >= 10000000) return `₹${(p / 10000000).toFixed(2)} Cr`;
@@ -121,6 +143,7 @@ export default function PropertyMapView({
         style={{ width: '100%', height: '100%' }}
       >
         <MapRecenter center={defaultCenter} />
+        {poiFitPoints && <FitBoundsToMarkers points={poiFitPoints} />}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -142,16 +165,18 @@ export default function PropertyMapView({
                     className="w-full h-28 object-cover rounded-xl mb-2" 
                   />
                   <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 uppercase mb-1">
-                    <Sparkles size={12} /> {prop.aiScore?.overall || 88}% AI Match
+                    <Sparkles size={12} /> {prop.aiScore?.overall != null ? `${prop.aiScore.overall}% AI Match` : 'Not yet scored'}
                   </div>
                   <h4 className="font-bold text-slate-900 text-sm truncate mb-1">{prop.title}</h4>
                   <p className="text-slate-500 text-xs truncate mb-2">{prop.location?.address || prop.location?.city}</p>
-                  
+
                   <div className="flex items-center justify-between border-t border-slate-100 pt-2 mb-2">
                     <span className="font-extrabold text-slate-900 text-sm">{formatPrice(prop.price)}</span>
-                    <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                      <CloudSun size={12} /> AQI {prop.environmentScore?.aqi || 40}
-                    </span>
+                    {prop.environmentScore?.aqi != null && (
+                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                        <CloudSun size={12} /> AQI {prop.environmentScore.aqi}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex gap-2">

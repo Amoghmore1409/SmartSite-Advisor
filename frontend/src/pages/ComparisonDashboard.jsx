@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { buyerAPI, propertyAPI } from '../services/api';
 import ScoreRing from '../components/ui/ScoreRing';
 import ExplainerChatbot from '../components/ui/ExplainerChatbot';
-import AgentDebateWidget from '../components/agents/AgentDebateWidget';
 import {
   GitCompare, Trophy, MapPin, Bed, Bath, Maximize,
   Sparkles, CheckCircle2, AlertTriangle, TrendingUp, Zap, ChevronDown,
@@ -232,9 +231,6 @@ export default function ComparisonDashboard() {
           </p>
         </div>
 
-        {/* Live Multi-Agent Swarm Debate */}
-        <AgentDebateWidget properties={comparedProperties} />
-
         {/* Tab View Selector */}
         <div className="flex items-center gap-1 bg-slate-200/80 p-1.5 rounded-2xl border border-slate-300">
           <button
@@ -322,7 +318,13 @@ export default function ComparisonDashboard() {
                       <MapPin size={12} className="text-indigo-400" /> {prop.location?.city || 'Bangalore'}
                     </p>
                   </div>
-                  <ScoreRing score={prop.matchPercentage || prop.aiScore?.overall || 82} size={54} label="Score" />
+                  {(prop.matchPercentage ?? prop.aiScore?.overall) != null ? (
+                    <ScoreRing score={prop.matchPercentage ?? prop.aiScore.overall} size={54} label="Score" />
+                  ) : (
+                    <div className="w-[54px] h-[54px] rounded-full border-2 border-dashed border-white/40 flex items-center justify-center text-center px-1">
+                      <span className="text-[8px] font-semibold text-white/60 leading-tight">Not scored</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -444,7 +446,9 @@ export default function ComparisonDashboard() {
                         <CloudSun size={16} className="text-emerald-600" /> Air Quality & Environment
                       </div>
                       <div className="text-sm font-extrabold text-emerald-800">
-                        AQI {prop.environmentScore?.aqi || 45} ({prop.environmentScore?.aqiLabel || 'Fresh Clean Air Zone'})
+                        {prop.environmentScore?.aqi != null
+                          ? `AQI ${prop.environmentScore.aqi} (${prop.environmentScore.aqiLabel || 'Unknown'})`
+                          : 'Not yet scored'}
                       </div>
                       <p className="text-[11px] text-emerald-700">Low traffic noise, high tree cover score.</p>
                     </div>

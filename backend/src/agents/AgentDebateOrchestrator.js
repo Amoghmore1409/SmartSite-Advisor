@@ -95,7 +95,7 @@ Generate the complete multi-agent debate and consensus winner in valid JSON.`;
         systemPrompt,
         userPrompt,
         temperature: 0.5,
-        maxTokens: 1500
+        maxTokens: 2200 // headroom for a full multi-round debate JSON so it isn't truncated mid-array (a truncated response fails JSON.parse and falls back to static content)
       });
 
       const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
