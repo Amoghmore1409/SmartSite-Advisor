@@ -122,10 +122,21 @@ class PortalSyncManager {
 
   /**
    * Forces an immediate live verification sync on a single property ID.
+   * Only actually marks a property verifiedLive if it has a real sourceUrl from a
+   * genuine scrape — otherwise this would let any property (including a seller's own
+   * manually-listed one, never touched by any portal) be stamped "Verified Live".
    */
   static async forceSinglePropertySync(propertyId) {
     const prop = await Property.findById(propertyId);
     if (!prop) throw new Error("Property not found");
+
+    if (!prop.sourceUrl) {
+      return {
+        success: false,
+        property: prop,
+        message: 'This property has no source portal URL to verify against — it was not scraped from a live listing.'
+      };
+    }
 
     prop.verifiedLive = true;
     prop.lastSyncedAt = new Date();
@@ -134,7 +145,7 @@ class PortalSyncManager {
     return {
       success: true,
       property: prop,
-      message: `Successfully verified live with ${prop.sourcePortal || 'Housing.com'}!`
+      message: `Successfully verified live with ${prop.sourcePortal}!`
     };
   }
 }
