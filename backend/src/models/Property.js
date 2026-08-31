@@ -286,9 +286,19 @@ const propertySchema = new mongoose.Schema(
     },
 
     // ── Live Portal Verification & Scraper Tracking ─────────────────────
+    /**
+     * Why no default portal / verifiedLive:true?
+     * These previously defaulted to 'Housing.com' / true, which meant ANY property
+     * created without explicitly setting them — including a seller's own manually
+     * listed property via the normal "List Your Property" flow, which was never
+     * scraped or verified by any portal — silently displayed a "VERIFIED LIVE
+     * (HOUSING.COM)" badge to buyers. Only the real scraper (PortalSyncManager) sets
+     * these explicitly with a genuine sourcePortal/sourceUrl; everything else should
+     * honestly default to unverified.
+     */
     sourcePortal: {
       type: String,
-      default: 'Housing.com',
+      default: null,
     },
     sourceUrl: {
       type: String,
@@ -296,7 +306,7 @@ const propertySchema = new mongoose.Schema(
     },
     verifiedLive: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     lastSyncedAt: {
       type: Date,
