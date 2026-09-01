@@ -66,9 +66,13 @@ router.post('/compare', async (req, res) => {
       // Fetch Google Places data and calculate new scores!
       const enhancedProperty = await enhancePropertyWithLivability(property);
 
+      // Without buyer preferences there's no personalized fit to compute, so fall back
+      // to the property's own aiScore — but honestly: a property that hasn't been
+      // scored yet (aiScore.overall is null) should show as unscored, not silently
+      // default to a fabricated 50 that looks identical for every unscored property.
       const matchPercentage = preferences
         ? matchmakingService.calculateMatchForProperty(enhancedProperty, preferences)
-        : (enhancedProperty.aiScore?.overall || 50);
+        : (enhancedProperty.aiScore?.overall ?? null);
 
       // Generate AI insights
       const insights = [];

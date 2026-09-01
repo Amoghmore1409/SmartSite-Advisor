@@ -6,33 +6,44 @@ import PropertyMapView from '../components/property/PropertyMapView';
 import PropertyReportModal from '../components/property/PropertyReportModal';
 import { Search, SlidersHorizontal, MapPin, ChevronDown, Sparkles, Filter, LayoutGrid, Map } from 'lucide-react';
 
+const PAGE_SIZE = 50;
+
 export default function PropertyListing() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ propertyType: '', sort: '' });
   const [viewMode, setViewMode] = useState('grid');
   const [selectedReportProperty, setSelectedReportProperty] = useState(null);
 
   useEffect(() => {
-    fetchProperties();
+    fetchProperties(1, false);
   }, []);
 
-  const fetchProperties = async () => {
-    setLoading(true);
+  const fetchProperties = async (pageNum, append) => {
+    append ? setLoadingMore(true) : setLoading(true);
     try {
-      const res = await propertyAPI.getAll({ limit: 50 });
+      const res = await propertyAPI.getAll({ limit: PAGE_SIZE, page: pageNum });
       if (res.data?.success) {
-        setProperties(res.data.data.properties || res.data.data || []);
+        const fetched = res.data.data.properties || res.data.data || [];
+        setProperties(prev => (append ? [...prev, ...fetched] : fetched));
+        setTotal(res.data.data.total ?? fetched.length);
+        setPage(pageNum);
       } else if (Array.isArray(res.data)) {
-        setProperties(res.data);
+        setProperties(prev => (append ? [...prev, ...res.data] : res.data));
       }
     } catch (error) {
       console.error('Failed to load properties', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleLoadMore = () => fetchProperties(page + 1, true);
 
   // Natural Language Property Matcher
   const getHighlightedIds = () => {
@@ -101,7 +112,9 @@ export default function PropertyListing() {
             Find Your Next <span className="text-ai-indigo">Genius</span> Investment
           </h1>
           <p className="text-lg text-slate-600 mb-6">
-            {filtered.length} exceptional properties curated and scored by AI for your portfolio.
+            {search || filters.propertyType
+              ? `${filtered.length} matching properties`
+              : `Showing ${properties.length} of ${total} exceptional properties`} curated and scored by AI for your portfolio.
           </p>
 
           {/* VIEW TOGGLE */}
@@ -192,15 +205,29 @@ export default function PropertyListing() {
             heightClass="h-[750px]"
           />
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filtered.map((prop, i) => (
-              <PropertyCard 
-                key={prop._id || i} 
-                property={prop} 
-                onOpenReport={(p) => setSelectedReportProperty(p)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {filtered.map((prop, i) => (
+                <PropertyCard
+                  key={prop._id || i}
+                  property={prop}
+                  onOpenReport={(p) => setSelectedReportProperty(p)}
+                />
+              ))}
+            </div>
+
+            {!search && !filters.propertyType && properties.length < total && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-8 py-3.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-full shadow-sm hover:shadow-md hover:border-ai-indigo/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingMore ? 'Loading...' : `Load More (${total - properties.length} remaining)`}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <motion.div 
             initial={{ opacity: 0 }} 
