@@ -127,17 +127,25 @@ const scoringPropertyAsync = async (property) => {
  * @param {Object} options - Pagination/sorting options.
  */
 const getAllProperties = async (filters = {}, options = {}) => {
-  const { city, propertyType, minPrice, maxPrice, status = 'available' } = filters;
+  const { city, propertyType, minPrice, maxPrice, status = 'available', search } = filters;
   const { sort = { createdAt: -1 }, limit = 10, skip = 0 } = options;
 
   const query = { status };
-  
+
   if (city) query['location.city'] = { $regex: city, $options: 'i' };
   if (propertyType) query.propertyType = propertyType;
   if (minPrice || maxPrice) {
     query.price = {};
     if (minPrice) query.price.$gte = Number(minPrice);
     if (maxPrice) query.price.$lte = Number(maxPrice);
+  }
+  if (search) {
+    const re = { $regex: search, $options: 'i' };
+    query.$or = [
+      { title: re },
+      { 'location.city': re },
+      { 'location.address': re },
+    ];
   }
 
   const properties = await Property.find(query)

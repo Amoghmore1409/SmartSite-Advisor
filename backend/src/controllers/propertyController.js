@@ -26,9 +26,9 @@ const createProperty = async (req, res, next) => {
  */
 const getAllProperties = async (req, res, next) => {
   try {
-    const { city, propertyType, minPrice, maxPrice, status, sort, page = 1, limit = 10 } = req.query;
-    
-    const filters = { city, propertyType, minPrice, maxPrice, status };
+    const { city, propertyType, minPrice, maxPrice, status, sort, page = 1, limit = 10, search } = req.query;
+
+    const filters = { city, propertyType, minPrice, maxPrice, status, search };
     const skip = (page - 1) * limit;
     const options = { sort, limit, skip };
 

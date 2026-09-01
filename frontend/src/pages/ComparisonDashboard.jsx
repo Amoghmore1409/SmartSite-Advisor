@@ -9,7 +9,7 @@ import {
   GitCompare, Trophy, MapPin, Bed, Bath, Maximize,
   Sparkles, CheckCircle2, AlertTriangle, TrendingUp, Zap, ChevronDown,
   Clock, ShieldCheck, Heart, DollarSign, CloudSun, ThumbsUp, ThumbsDown,
-  Building, UserCheck, HelpCircle, ArrowRight, Compass, Navigation
+  Building, UserCheck, HelpCircle, ArrowRight, Compass, Navigation, Search
 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Legend } from 'recharts';
 
@@ -21,9 +21,17 @@ export default function ComparisonDashboard() {
   const [comparedProperties, setComparedProperties] = useState([]);
   const [winner, setWinner] = useState(null);
   const [allProperties, setAllProperties] = useState([]);
+  const [pickerPage, setPickerPage] = useState(1);
+  const [pickerTotal, setPickerTotal] = useState(0);
+  const [loadingMorePicker, setLoadingMorePicker] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'financial' | 'convenience' | 'table'
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [debouncedPickerSearch, setDebouncedPickerSearch] = useState('');
+  const [searchResults, setSearchResults] = useState(null); // null = not searching; array = server search results across ALL properties
+  const [searchLoading, setSearchLoading] = useState(false);
+  const PICKER_PAGE_SIZE = 30;
 
   useEffect(() => {
     const idsParam = searchParams.get('ids');
@@ -32,22 +40,60 @@ export default function ComparisonDashboard() {
       setSelectedIds(ids);
       fetchComparison(ids);
     } else {
-      fetchAllProperties();
+      fetchAllProperties(1, false);
     }
   }, [searchParams]);
 
-  const fetchAllProperties = async () => {
-    setLoading(true);
+  // Debounce the search box so we don't fire a request on every keystroke.
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedPickerSearch(pickerSearch.trim()), 350);
+    return () => clearTimeout(handle);
+  }, [pickerSearch]);
+
+  // Search queries the backend directly across ALL properties (not just whatever's
+  // been paginated into allProperties so far) — otherwise searching only ever found
+  // matches within the currently-loaded page.
+  useEffect(() => {
+    if (!debouncedPickerSearch) {
+      setSearchResults(null);
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    propertyAPI.getAll({ search: debouncedPickerSearch, limit: 100 })
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data?.success) {
+          setSearchResults(res.data.data.properties || res.data.data || []);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) console.error('Property search failed:', err);
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [debouncedPickerSearch]);
+
+  const fetchAllProperties = async (pageNum, append) => {
+    append ? setLoadingMorePicker(true) : setLoading(true);
     try {
-      const res = await propertyAPI.getAll();
+      const res = await propertyAPI.getAll({ limit: PICKER_PAGE_SIZE, page: pageNum });
       if (res.data?.success) {
-        setAllProperties(res.data.data.properties || res.data.data || []);
+        const fetched = res.data.data.properties || res.data.data || [];
+        setAllProperties(prev => (append ? [...prev, ...fetched] : fetched));
+        setPickerTotal(res.data.data.total ?? fetched.length);
+        setPickerPage(pageNum);
       }
     } catch (err) {
       console.error('Failed to fetch properties:', err);
     }
     setLoading(false);
+    setLoadingMorePicker(false);
   };
+
+  const handleLoadMorePicker = () => fetchAllProperties(pickerPage + 1, true);
 
   const fetchComparison = async (ids) => {
     setLoading(true);
@@ -84,6 +130,11 @@ export default function ComparisonDashboard() {
       fetchComparison(selectedIds);
     }
   };
+
+  // While actively searching, show the backend's results across all properties;
+  // otherwise show whatever's been paginated into the picker so far.
+  const isSearching = pickerSearch.trim().length > 0;
+  const filteredPickerProperties = isSearching ? (searchResults || []) : allProperties;
 
   const formatPrice = (p) => {
     if (!p) return '₹0';
@@ -159,8 +210,39 @@ export default function ComparisonDashboard() {
           </p>
         </div>
 
+        <div className="max-w-xl mx-auto mb-8 relative">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search all properties by title, city, or locality..."
+            value={pickerSearch}
+            onChange={(e) => setPickerSearch(e.target.value)}
+            className="w-full bg-white border border-slate-200 py-3 pl-11 pr-11 rounded-2xl text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-medium placeholder:text-slate-400 shadow-sm"
+          />
+          {searchLoading && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          )}
+        </div>
+
+        {isSearching && searchLoading && searchResults === null ? (
+          <div className="flex justify-center py-16">
+            <div className="w-8 h-8 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          </div>
+        ) : filteredPickerProperties.length === 0 ? (
+          <div className="bg-white/50 backdrop-blur-xl border border-dashed border-slate-200 rounded-3xl p-16 text-center max-w-2xl mx-auto shadow-soft mb-8">
+            <Search size={32} className="text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-900 mb-2">No properties match "{pickerSearch}"</h3>
+            <p className="text-slate-500 text-sm mb-6">Try a different search term, or clear it to browse everything loaded so far.</p>
+            <button
+              onClick={() => setPickerSearch('')}
+              className="px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-full hover:bg-indigo-500 transition-colors text-sm"
+            >
+              Clear Search
+            </button>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {allProperties.map((prop, i) => {
+          {filteredPickerProperties.map((prop, i) => {
             const isSelected = selectedIds.includes(prop._id);
             return (
               <div
@@ -195,6 +277,19 @@ export default function ComparisonDashboard() {
             );
           })}
         </div>
+        )}
+
+        {!pickerSearch.trim() && allProperties.length < pickerTotal && (
+          <div className="flex justify-center mb-8">
+            <button
+              onClick={handleLoadMorePicker}
+              disabled={loadingMorePicker}
+              className="px-8 py-3.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-full shadow-sm hover:shadow-md hover:border-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingMorePicker ? 'Loading...' : `Load More (${pickerTotal - allProperties.length} remaining)`}
+            </button>
+          </div>
+        )}
 
         {selectedIds.length >= 2 && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">

@@ -109,8 +109,10 @@ const getMatchedProperties = async (buyerId, options = {}) => {
   const preferences = await BuyerPreferences.findOne({ user: buyerId });
   
   // Build query filter
-  const filter = { status: 'available' };
-  
+  // verifiedLive: true excludes the static/unverified sample corpus (autoSeed.js) —
+  // Buyer Hub should only surface real, portal-scraped listings.
+  const filter = { status: 'available', verifiedLive: true };
+
   if (options.city) {
     filter['location.city'] = new RegExp(options.city, 'i');
   }

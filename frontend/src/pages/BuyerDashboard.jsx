@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { buyerAPI, propertyAPI } from '../services/api';
 import PropertyCard from '../components/cards/PropertyCard';
 import PropertyMapView from '../components/property/PropertyMapView';
 import PropertyReportModal from '../components/property/PropertyReportModal';
-import { Brain, LayoutGrid, List, Filter, ArrowUpDown, Sparkles, Map, Leaf, Banknote, TrendingUp } from 'lucide-react';
+import { Brain, LayoutGrid, List, Filter, ArrowUpDown, Sparkles, Map, Leaf, Banknote, TrendingUp, SlidersHorizontal } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -17,8 +18,11 @@ const fadeUp = {
 
 export default function BuyerDashboard() {
   const { user } = useAuth();
+  const PAGE_SIZE = 12;
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({ sort: 'match', propertyType: '', bedrooms: '' });
   const [activeTag, setActiveTag] = useState('all');
   const [totalResults, setTotalResults] = useState(0);
@@ -26,30 +30,38 @@ export default function BuyerDashboard() {
   const [selectedReportProperty, setSelectedReportProperty] = useState(null);
 
   useEffect(() => {
-    fetchData();
+    fetchData(1, false);
   }, [filters]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (pageNum, append) => {
+    append ? setLoadingMore(true) : setLoading(true);
     try {
-      const matchRes = await buyerAPI.getMatches({ buyerId: user?._id, ...filters });
+      const matchRes = await buyerAPI.getMatches({ buyerId: user?._id, ...filters, page: pageNum, limit: PAGE_SIZE });
       if (matchRes.data?.success) {
-        setProperties(matchRes.data.data.properties || matchRes.data.data || []);
+        const fetched = matchRes.data.data.properties || matchRes.data.data || [];
+        setProperties(prev => (append ? [...prev, ...fetched] : fetched));
         setTotalResults(matchRes.data.data.total || 0);
+        setPage(pageNum);
       }
     } catch (err) {
       try {
-        const fallback = await propertyAPI.getAll();
+        const fallback = await propertyAPI.getAll({ limit: PAGE_SIZE, page: pageNum });
         if (fallback.data?.success) {
-          setProperties(fallback.data.data.properties || fallback.data.data || []);
+          const fetched = fallback.data.data.properties || fallback.data.data || [];
+          setProperties(prev => (append ? [...prev, ...fetched] : fetched));
+          setTotalResults(fallback.data.data.total || 0);
+          setPage(pageNum);
         }
       } catch (eTx) {
         console.error('Failed to load properties');
       }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleLoadMore = () => fetchData(page + 1, true);
 
   // Client-side quick filter chip logic
   const filteredProperties = properties.filter(prop => {
@@ -81,7 +93,14 @@ export default function BuyerDashboard() {
           </div>
 
           {/* VIEW SWITCHER */}
-          <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+          <div className="flex items-center gap-2">
+            <Link
+              to="/buyer/onboarding"
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 shadow-sm transition-all"
+            >
+              <SlidersHorizontal size={16} /> Edit Preferences
+            </Link>
+            <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
             <button
               onClick={() => setViewMode('grid')}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${viewMode === 'grid' ? 'bg-slate-950 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
@@ -100,6 +119,7 @@ export default function BuyerDashboard() {
             >
               <Map size={16} /> Map View
             </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
@@ -115,7 +135,7 @@ export default function BuyerDashboard() {
             onClick={() => setActiveTag('all')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTag === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
           >
-            All Listings ({properties.length})
+            All Listings ({totalResults || properties.length})
           </button>
 
           <button
@@ -182,16 +202,30 @@ export default function BuyerDashboard() {
               heightClass="h-[750px]"
             />
           ) : filteredProperties.length > 0 ? (
-            <div className={`grid gap-8 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-              {filteredProperties.map((prop, i) => (
-                <PropertyCard 
-                  key={prop._id || i} 
-                  property={prop} 
-                  matchPercentage={prop.matchScore || prop.aiScore?.overall}
-                  onOpenReport={(p) => setSelectedReportProperty(p)}
-                />
-              ))}
-            </div>
+            <>
+              <div className={`grid gap-8 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                {filteredProperties.map((prop, i) => (
+                  <PropertyCard
+                    key={prop._id || i}
+                    property={prop}
+                    matchPercentage={prop.matchScore || prop.aiScore?.overall}
+                    onOpenReport={(p) => setSelectedReportProperty(p)}
+                  />
+                ))}
+              </div>
+
+              {activeTag === 'all' && properties.length < totalResults && (
+                <div className="flex justify-center mt-10">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="px-8 py-3.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-full shadow-sm hover:shadow-md hover:border-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore ? 'Loading...' : `Load More (${totalResults - properties.length} remaining)`}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-white/50 backdrop-blur-xl border border-dashed border-slate-200 rounded-3xl p-20 text-center shadow-soft">
               <Sparkles size={48} className="text-slate-300 mx-auto mb-6" />
