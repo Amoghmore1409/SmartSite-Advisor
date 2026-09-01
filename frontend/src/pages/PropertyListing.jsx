@@ -92,7 +92,7 @@ export default function PropertyListing() {
     });
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-6 md:px-12">
+    <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-6 md:px-12">
       {/* Background Gradients */}
       <div className="fixed top-0 left-0 w-full h-[50vh] bg-gradient-to-b from-ai-indigo/5 to-transparent pointer-events-none -z-10 blur-3xl" />
       

@@ -36,7 +36,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 nav-glass">
+    <nav className="fixed top-0 left-0 right-0 z-[1000] nav-glass">
       <div className="container-app flex items-center justify-between h-16">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 no-underline">

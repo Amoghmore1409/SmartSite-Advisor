@@ -129,7 +129,7 @@ export default function SellerDashboard() {
   }
 
   return (
-    <div className="container-app py-6 pb-12">
+    <div className="container-app pt-24 pb-12">
       {/* Header */}
       <motion.div initial="hidden" animate="visible" className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <motion.div variants={fadeUp} custom={0}>

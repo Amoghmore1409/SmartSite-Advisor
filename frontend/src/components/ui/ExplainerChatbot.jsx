@@ -14,13 +14,18 @@ export default function ExplainerChatbot({ property, color = '#6366f1', onPoiUpd
   const [loading, setLoading] = useState(false);
   const [pois, setPois] = useState([]);
   const [poiCategory, setPoiCategory] = useState(null);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   const propertyLat = property?.location?.coordinates?.[1] || 19.0760;
   const propertyLng = property?.location?.coordinates?.[0] || 72.8777;
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   };
 
   useEffect(() => {
@@ -194,7 +199,7 @@ export default function ExplainerChatbot({ property, color = '#6366f1', onPoiUpd
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 relative no-scrollbar">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 relative no-scrollbar">
           {messages.map((msg, i) => (
             <motion.div 
               key={i} 
@@ -225,7 +230,6 @@ export default function ExplainerChatbot({ property, color = '#6366f1', onPoiUpd
                </div>
              </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
