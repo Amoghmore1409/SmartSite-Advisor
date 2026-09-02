@@ -89,7 +89,7 @@ export default function PropertyDetails() {
   const match = aiScore?.overall ?? null;
 
   return (
-    <div className="container-app py-6 pb-16">
+    <div className="container-app pt-24 pb-16">
       {/* Back button */}
       <button 
         onClick={() => navigate(-1)}

@@ -75,7 +75,7 @@ export default function BuyerDashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-6 md:px-12">
+    <div className="min-h-screen bg-slate-50 pt-24 pb-12 px-6 md:px-12">
       {/* HEADER */}
       <motion.div initial="hidden" animate="visible" className="max-w-7xl mx-auto mb-10">
         <motion.div variants={fadeUp} custom={0} className="flex flex-col md:flex-row items-center md:items-end justify-between gap-6">

@@ -119,7 +119,7 @@ export default function CreateProperty() {
   const prevStep = () => step > 0 && setStep(step - 1);
 
   return (
-    <div className="container-app py-6 pb-12 max-w-3xl mx-auto">
+    <div className="container-app pt-24 pb-12 max-w-3xl mx-auto">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <div className="flex items-center gap-2.5 mb-1.5">

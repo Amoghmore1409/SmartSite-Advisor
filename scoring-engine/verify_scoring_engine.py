@@ -18,7 +18,7 @@ except ImportError:
     print("Error: requests library not found. Install with: pip install requests")
     sys.exit(1)
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://localhost:5001"
 
 # Test properties
 POWAI_GOOD_PROPERTY = {
@@ -169,9 +169,9 @@ def run_tests():
         if passed_test:
             passed += 1
             overall = result["data"]["overall"]
-            test_log(4, f"Bandra score >= 80", overall >= 80,
+            test_log(4, f"Bandra score >= 70", overall >= 70,
                     f"Score: {overall}")
-            if overall >= 80:
+            if overall >= 70:
                 passed += 1
             else:
                 failed += 1

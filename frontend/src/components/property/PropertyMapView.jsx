@@ -2,8 +2,130 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Sparkles, CloudSun, ExternalLink, Compass } from 'lucide-react';
+import { MapPin, Sparkles, CloudSun, Compass } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+// Comprehensive Micro-Locality Coordinates Lookup Table for MMR (Mumbai, Thane, Navi Mumbai)
+const LOCALITY_COORDINATES = {
+  // South & Central Mumbai
+  'lower parel': [18.9950, 72.8280],
+  'worli': [19.0176, 72.8172],
+  'mahalaxmi': [18.9827, 72.8250],
+  'dadar': [19.0178, 72.8478],
+  'prabhadevi': [19.0160, 72.8280],
+  'colaba': [18.9067, 72.8147],
+  'nariman point': [18.9260, 72.8228],
+
+  // Western Suburbs
+  'bandra west': [19.0596, 72.8295],
+  'bandra east': [19.0625, 72.8512],
+  'bandra': [19.0596, 72.8295],
+  'bkc': [19.0657, 72.8687],
+  'bandra kurla complex': [19.0657, 72.8687],
+  'khar': [19.0697, 72.8335],
+  'santacruz': [19.0843, 72.8360],
+  'santa cruz': [19.0843, 72.8360],
+  'juhu': [19.1075, 72.8263],
+  'andheri east': [19.1136, 72.8697],
+  'andheri west': [19.1363, 72.8277],
+  'andheri': [19.1136, 72.8697],
+  'lokhandwala': [19.1415, 72.8235],
+  'goregaon east': [19.1663, 72.8526],
+  'goregaon west': [19.1680, 72.8390],
+  'goregaon': [19.1663, 72.8526],
+  'malad west': [19.1860, 72.8485],
+  'malad east': [19.1840, 72.8600],
+  'malad': [19.1860, 72.8485],
+  'kandivali': [19.2045, 72.8522],
+  'borivali east': [19.2288, 72.8541],
+  'borivali west': [19.2310, 72.8470],
+  'borivali': [19.2288, 72.8541],
+  'dahisar': [19.2570, 72.8590],
+
+  // Central Suburbs
+  'powai': [19.1176, 72.9060],
+  'hiranandani': [19.1176, 72.9060],
+  'chembur': [19.0623, 72.8997],
+  'ghatkopar': [19.0860, 72.9080],
+  'vikhroli': [19.1000, 72.9200],
+  'kanjurmarg': [19.1300, 72.9300],
+  'bhandup': [19.1500, 72.9400],
+  'mulund': [19.1726, 72.9565],
+
+  // Thane
+  'ghodbunder road': [19.2650, 72.9640],
+  'ghodbunder': [19.2650, 72.9640],
+  'majiwada': [19.2190, 72.9860],
+  'kapurbawdi': [19.2290, 72.9810],
+  'vartak nagar': [19.2100, 72.9650],
+  'thane west': [19.2183, 72.9781],
+  'thane east': [19.1870, 72.9720],
+  'thane': [19.2183, 72.9781],
+
+  // Navi Mumbai
+  'vashi': [19.0770, 72.9980],
+  'sanpada': [19.0640, 73.0080],
+  'nerul': [19.0330, 73.0180],
+  'seawoods': [19.0108, 73.0169],
+  'cbd belapur': [19.0200, 73.0400],
+  'belapur': [19.0200, 73.0400],
+  'kharghar': [19.0473, 73.0699],
+  'kamothe': [19.0260, 73.0950],
+  'panvel': [18.9894, 73.1175],
+  'airoli': [19.1570, 72.9980],
+  'ghansoli': [19.1250, 73.0000],
+  'kopar khairane': [19.1020, 73.0070],
+};
+
+function getAccurateCoordinates(prop, index = 0) {
+  const coords = prop.location?.coordinates;
+  const hasCoords = Array.isArray(coords) && coords.length === 2 && coords[0] !== 0 && coords[1] !== 0;
+
+  let lat = null;
+  let lng = null;
+
+  if (hasCoords) {
+    const isGenericCenter = Math.abs(coords[0] - 72.8777) < 0.005 && Math.abs(coords[1] - 19.0760) < 0.005;
+    if (!isGenericCenter) {
+      lng = coords[0];
+      lat = coords[1];
+    }
+  }
+
+  if (!lat || !lng) {
+    const textToMatch = `${prop.title || ''} ${prop.location?.address || ''} ${prop.location?.city || ''} ${prop.locality || ''} ${prop.description || ''}`.toLowerCase();
+    
+    for (const [locality, locCoords] of Object.entries(LOCALITY_COORDINATES)) {
+      if (textToMatch.includes(locality)) {
+        lat = locCoords[0];
+        lng = locCoords[1];
+        break;
+      }
+    }
+  }
+
+  if (!lat || !lng) {
+    const city = prop.location?.city?.toLowerCase() || '';
+    if (city.includes('thane')) {
+      lat = 19.2183; lng = 72.9781;
+    } else if (city.includes('navi mumbai')) {
+      lat = 19.0330; lng = 73.0297;
+    } else {
+      lat = 19.0760; lng = 72.8777;
+    }
+  }
+
+  const idStr = prop._id || prop.id || prop.title || `${index}`;
+  let hash = 0;
+  for (let i = 0; i < idStr.length; i++) {
+    hash = (hash << 5) - hash + idStr.charCodeAt(i);
+    hash |= 0;
+  }
+  const jitterLat = (((Math.abs(hash) % 100) / 100) - 0.5) * 0.003;
+  const jitterLng = (((Math.abs(hash >> 2) % 100) / 100) - 0.5) * 0.003;
+
+  return [lat + jitterLat, lng + jitterLng];
+}
 
 // Custom Property Pin Icon
 const createCustomIcon = (price, verified, isHighlighted = false) => {
@@ -30,7 +152,7 @@ const createCustomIcon = (price, verified, isHighlighted = false) => {
         gap: 6px;
         white-space: nowrap;
         transform: translate(-50%, -100%);
-        z-index: ${isHighlighted ? 9999 : 100};
+        z-index: ${isHighlighted ? 999 : 50};
       ">
         ${isHighlighted ? '<span style="font-size:12px;">✨</span>' : `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${verified ? '#10b981' : '#6366f1'};"></span>`}
         ${priceLabel}
@@ -63,7 +185,6 @@ const createPoiIcon = (category, name) => {
         gap: 5px;
         white-space: nowrap;
         transform: translate(-50%, -100%);
-        animation: bounce 1s infinite alternate;
       ">
         <span>${iconEmoji}</span>
         <span>${name}</span>
@@ -84,8 +205,6 @@ function MapRecenter({ center }) {
   return null;
 }
 
-// Fits the map viewport to include the property marker plus every pinned POI,
-// so newly-plotted points (which can be several km from the property) are never cropped out.
 function FitBoundsToMarkers({ points }) {
   const map = useMap();
   useEffect(() => {
@@ -109,20 +228,21 @@ export default function PropertyMapView({
   customPois = [],
   activePoiCategory = null
 }) {
-  const validProperties = (properties || []).filter(
-    p => p.location?.coordinates && Array.isArray(p.location.coordinates) && p.location.coordinates.length === 2
-  );
+  const propertyList = properties || [];
 
-  // If single property, focus directly on it with high detail zoom (14), otherwise center on Mumbai region (11)
-  const isSingleProperty = validProperties.length === 1;
+  // Compute accurate coordinates for each property using micro-locality geocoder
+  const mappedProperties = propertyList.map((p, i) => ({
+    property: p,
+    position: getAccurateCoordinates(p, i)
+  }));
+
+  const isSingleProperty = mappedProperties.length === 1;
   const defaultCenter = isSingleProperty 
-    ? [validProperties[0].location.coordinates[1], validProperties[0].location.coordinates[0]]
+    ? mappedProperties[0].position
     : [19.0760, 72.8777];
 
   const defaultZoom = isSingleProperty ? 14 : 11;
 
-  // When the AI chat has pinned nearby POIs, fit the viewport to the property + all POIs
-  // so nothing pinned falls outside the visible map.
   const poiFitPoints = isSingleProperty && customPois.length > 0
     ? [defaultCenter, ...customPois.map((poi) => [poi.lat, poi.lng])]
     : null;
@@ -135,7 +255,7 @@ export default function PropertyMapView({
   };
 
   return (
-    <div className={`relative w-full ${heightClass} rounded-3xl overflow-hidden border border-slate-200 shadow-soft`}>
+    <div className={`relative w-full ${heightClass} rounded-3xl overflow-hidden border border-slate-200 shadow-soft z-0`}>
       <MapContainer 
         center={defaultCenter} 
         zoom={defaultZoom} 
@@ -150,8 +270,7 @@ export default function PropertyMapView({
         />
 
         {/* Property Markers */}
-        {validProperties.map((prop, i) => {
-          const position = [prop.location.coordinates[1], prop.location.coordinates[0]];
+        {mappedProperties.map(({ property: prop, position }, i) => {
           const isHighlighted = highlightedPropertyIds.includes(prop._id || prop.id);
           const icon = createCustomIcon(prop.price, prop.verifiedLive, isHighlighted);
 
@@ -201,7 +320,7 @@ export default function PropertyMapView({
           );
         })}
 
-        {/* Dynamic Nearby POI Markers (Triggered by AI Chat) */}
+        {/* Dynamic Nearby POI Markers */}
         {customPois.map((poi, idx) => {
           const poiIcon = createPoiIcon(poi.category, poi.name);
           return (
@@ -217,15 +336,15 @@ export default function PropertyMapView({
         })}
       </MapContainer>
 
-      {/* Floating Info & Active Filter Badges */}
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-2 pointer-events-none">
+      {/* Floating Info & Active Filter Badges - z-[100] keeps it safely below fixed Navbar (z-[1000]) */}
+      <div className="absolute top-4 right-4 z-[100] flex flex-col items-end gap-2 pointer-events-none">
         <div className="bg-slate-900/90 backdrop-blur-md text-white text-xs font-bold px-4 py-2 rounded-full border border-white/20 shadow-lg flex items-center gap-2 pointer-events-auto">
           <MapPin size={14} className="text-emerald-400" />
-          {isSingleProperty ? 'Neighborhood & Spatial View' : `Showing ${validProperties.length} Regional Properties`}
+          {isSingleProperty ? 'Neighborhood & Spatial View' : `Showing ${mappedProperties.length} Regional Properties`}
         </div>
 
         {activePoiCategory && (
-          <div className="bg-amber-500/90 backdrop-blur-md text-slate-950 text-xs font-extrabold px-4 py-2 rounded-full border border-amber-300 shadow-xl flex items-center gap-2 animate-bounce pointer-events-auto">
+          <div className="bg-amber-500/90 backdrop-blur-md text-slate-950 text-xs font-extrabold px-4 py-2 rounded-full border border-amber-300 shadow-xl flex items-center gap-2 pointer-events-auto">
             <Compass size={14} className="text-slate-950" />
             Showing POIs: {activePoiCategory} ({customPois.length} Found)
           </div>

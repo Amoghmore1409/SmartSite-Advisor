@@ -197,7 +197,7 @@ export default function ComparisonDashboard() {
   // ── SELECTION MODE ──
   if (comparedProperties.length === 0) {
     return (
-      <div className="container-app py-6 pb-12">
+      <div className="container-app pt-24 pb-12">
         <div className="max-w-3xl mx-auto text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold mb-4">
             <Sparkles size={14} className="text-indigo-600" /> Plain-English Property Comparison
